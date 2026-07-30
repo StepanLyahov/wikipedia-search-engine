@@ -6,10 +6,10 @@
 
 К концу курса система будет состоять из следующих сервисов:
 
-* `crawler` — скачивает страницы Википедии;
-* `indexer` — извлекает текст из HTML и индексирует документы;
-* `embedding-service` — генерирует embeddings;
-* `search-api` — предоставляет REST API для поиска;
+* `crawler` — скачивает страницы Википедии (Golang);
+* `indexer` — извлекает текст из HTML и индексирует документы (Golang);
+* `embedding-service` — генерирует embeddings (Python);
+* `search-api` — предоставляет REST API для поиска (Golang);
 * `postgresql` — хранит скачанные страницы;
 * `elasticsearch` — хранит поисковый индекс.
 
