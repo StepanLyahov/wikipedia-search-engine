@@ -6,6 +6,6 @@ import (
 )
 
 // New creates an indexer service with its required ports.
-func New(pages repository.PageRepository, index repository.DocumentIndex, log logger.Logger, cfg Config) *Service {
-	return &Service{pages: pages, index: index, logger: log, cfg: cfg}
+func New(pages repository.PageRepository, index repository.DocumentIndex, embedder Embedder, log logger.Logger, cfg Config) *Service {
+	return &Service{pages: pages, index: index, embedder: embedder, logger: log, cfg: cfg}
 }

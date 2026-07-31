@@ -47,6 +47,21 @@ services:
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
 
+  embedding-service:
+    build:
+      context: ./embedding-service
+    environment:
+      GRPC_PORT: "50051"
+      EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-all-MiniLM-L6-v2}
+      GRPC_MAX_WORKERS: ${EMBEDDING_GRPC_MAX_WORKERS:-10}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 50051), timeout=2).close()"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "${EMBEDDING_SERVICE_PORT:-50051}:50051"
+
   indexer:
     build:
       context: ./indexer
@@ -56,10 +71,15 @@ services:
       ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-wiki_pages}
       INDEXER_REQUEST_TIMEOUT: ${INDEXER_REQUEST_TIMEOUT:-15s}
       INDEXER_BATCH_SIZE: ${INDEXER_BATCH_SIZE:-500}
+      EMBEDDING_SERVICE_ADDR: embedding-service:50051
+      INDEXER_EMBEDDING_TIMEOUT: ${INDEXER_EMBEDDING_TIMEOUT:-15s}
+      INDEXER_EMBEDDING_DIMS: ${INDEXER_EMBEDDING_DIMS:-384}
     depends_on:
       postgres:
         condition: service_healthy
       elasticsearch:
+        condition: service_healthy
+      embedding-service:
         condition: service_healthy
       crawler:
         condition: service_completed_successfully

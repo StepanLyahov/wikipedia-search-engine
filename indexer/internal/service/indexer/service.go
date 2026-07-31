@@ -7,12 +7,16 @@ import (
 )
 
 // Config configures indexing behaviour.
-type Config struct{ BatchSize int }
+type Config struct {
+	BatchSize     int
+	EmbeddingDims int
+}
 
 // Service implements the indexing use case.
 type Service struct {
-	pages  repository.PageRepository
-	index  repository.DocumentIndex
-	logger logger.Logger
-	cfg    Config
+	pages    repository.PageRepository
+	index    repository.DocumentIndex
+	embedder Embedder
+	logger   logger.Logger
+	cfg      Config
 }

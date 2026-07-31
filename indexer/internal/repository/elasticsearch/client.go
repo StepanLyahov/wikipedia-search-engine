@@ -5,7 +5,8 @@ import "net/http"
 
 // DocumentIndex adapts Elasticsearch HTTP APIs to the repository.DocumentIndex port.
 type DocumentIndex struct {
-	client  *http.Client
-	baseURL string
-	index   string
+	client        *http.Client
+	baseURL       string
+	index         string
+	embeddingDims int
 }

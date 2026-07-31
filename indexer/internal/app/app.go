@@ -5,11 +5,13 @@ import (
 	zaplogger "github.com/wikipedia-search-engine/indexer/internal/logger/zap"
 	"github.com/wikipedia-search-engine/indexer/internal/repository/postgres"
 	"github.com/wikipedia-search-engine/indexer/internal/service/indexer"
+	"github.com/wikipedia-search-engine/indexer/internal/transport/embedding"
 )
 
 // App owns the assembled dependencies and application lifecycle.
 type App struct {
-	indexer *indexer.Service
-	pages   *postgres.PageRepository
-	logger  *zaplogger.Logger
+	indexer  *indexer.Service
+	pages    *postgres.PageRepository
+	embedder *embedding.Client
+	logger   *zaplogger.Logger
 }

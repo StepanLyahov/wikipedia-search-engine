@@ -9,14 +9,16 @@ import (
 	"net/http"
 )
 
-// indexMapping is the wiki_pages mapping required by the indexing use case.
-const indexMapping = `{
+// indexMappingTemplate is the wiki_pages mapping required by the indexing use case.
+// %d is the embedding vector's dimensionality, fixed by the embedding-service's model.
+const indexMappingTemplate = `{
 	"mappings": {
 		"properties": {
 			"id": {"type": "long"},
 			"url": {"type": "keyword"},
 			"title": {"type": "text"},
-			"body": {"type": "text"}
+			"body": {"type": "text"},
+			"embedding": {"type": "dense_vector", "dims": %d, "index": true, "similarity": "cosine"}
 		}
 	}
 }`
@@ -33,7 +35,9 @@ type indexErrorResponse struct {
 
 // EnsureIndex creates the document index if it does not already exist.
 func (c *DocumentIndex) EnsureIndex(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, c.baseURL+"/"+c.index, bytes.NewBufferString(indexMapping))
+	mapping := fmt.Sprintf(indexMappingTemplate, c.embeddingDims)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, c.baseURL+"/"+c.index, bytes.NewBufferString(mapping))
 	if err != nil {
 		return err
 	}

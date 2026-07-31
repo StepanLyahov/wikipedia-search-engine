@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package embedding;
+
+option go_package = "github.com/wikipedia-search-engine/indexer/internal/pb/embedding;embedding";
+
+// EmbeddingService turns text into a fixed-size dense vector for semantic search.
+service EmbeddingService {
+  rpc Embed(EmbedRequest) returns (EmbedResponse);
+}
+
+message EmbedRequest {
+  string text = 1;
+}
+
+message EmbedResponse {
+  repeated float vector = 1;
+}

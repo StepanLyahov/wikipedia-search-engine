@@ -6,9 +6,9 @@
 
 ## Что нужно сделать
 
-Реализовать сервис: embedding-service
+Реализовать сервис: embedding-service на языке Python
 
-Сервис должен предоставлять gRPC API: Embed(text) -> vector
+Сервис должен предоставлять REST API: Embed(text) -> vector
 
 ## Что должно получиться после выполнения
 

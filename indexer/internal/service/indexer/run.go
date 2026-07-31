@@ -8,6 +8,8 @@ import (
 	"github.com/wikipedia-search-engine/indexer/internal/logger"
 )
 
+const fieldURL = "url"
+
 // Run extracts, cleans and indexes every stored page into Elasticsearch.
 func (s *Service) Run(ctx context.Context) error {
 	s.logger.Info("indexing started")
@@ -25,7 +27,10 @@ func (s *Service) Run(ctx context.Context) error {
 
 	documents := s.buildDocuments(pages)
 
-	indexed, err := s.indexInBatches(ctx, documents)
+	embedded := s.embedDocuments(ctx, documents)
+	s.logger.Info("documents embedded", logger.Field{Key: "count", Value: len(embedded)})
+
+	indexed, err := s.indexInBatches(ctx, embedded)
 	if err != nil {
 		return err
 	}
@@ -42,7 +47,7 @@ func (s *Service) buildDocuments(pages []domain.Page) []domain.Document {
 		body := extractBody(page.HTML)
 
 		if title == "" && body == "" {
-			s.logger.Info("page skipped: empty content", logger.Field{Key: "url", Value: page.URL})
+			s.logger.Info("page skipped: empty content", logger.Field{Key: fieldURL, Value: page.URL})
 
 			continue
 		}

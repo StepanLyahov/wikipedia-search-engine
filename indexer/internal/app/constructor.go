@@ -8,6 +8,7 @@ import (
 	"github.com/wikipedia-search-engine/indexer/internal/repository/elasticsearch"
 	"github.com/wikipedia-search-engine/indexer/internal/repository/postgres"
 	"github.com/wikipedia-search-engine/indexer/internal/service/indexer"
+	"github.com/wikipedia-search-engine/indexer/internal/transport/embedding"
 	"go.uber.org/zap"
 )
 
@@ -32,8 +33,19 @@ func New(ctx context.Context) (*App, error) {
 		return nil, err
 	}
 
-	documentIndex := elasticsearch.NewDocumentIndex(cfg.ElasticsearchURL, cfg.ElasticsearchIndex, cfg.RequestTimeout)
-	service := indexer.New(pages, documentIndex, applicationLogger, indexer.Config{BatchSize: cfg.BatchSize})
+	embedder, err := embedding.NewClient(cfg.EmbeddingServiceAddr, cfg.EmbeddingRequestTimeout)
+	if err != nil {
+		pages.Close()
+		applicationLogger.Sync()
 
-	return &App{indexer: service, pages: pages, logger: applicationLogger}, nil
+		return nil, err
+	}
+
+	documentIndex := elasticsearch.NewDocumentIndex(cfg.ElasticsearchURL, cfg.ElasticsearchIndex, cfg.RequestTimeout, cfg.EmbeddingDims)
+	service := indexer.New(pages, documentIndex, embedder, applicationLogger, indexer.Config{
+		BatchSize:     cfg.BatchSize,
+		EmbeddingDims: cfg.EmbeddingDims,
+	})
+
+	return &App{indexer: service, pages: pages, embedder: embedder, logger: applicationLogger}, nil
 }
