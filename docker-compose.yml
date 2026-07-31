@@ -65,6 +65,25 @@ services:
         condition: service_completed_successfully
     restart: "no"
 
+  search-api:
+    build:
+      context: ./search-api
+    environment:
+      HTTP_ADDR: ":8080"
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-wiki_pages}
+      SEARCH_API_REQUEST_TIMEOUT: ${SEARCH_API_REQUEST_TIMEOUT:-15s}
+      SEARCH_API_SHUTDOWN_TIMEOUT: ${SEARCH_API_SHUTDOWN_TIMEOUT:-5s}
+      SEARCH_API_DEFAULT_SIZE: ${SEARCH_API_DEFAULT_SIZE:-10}
+      SEARCH_API_MAX_SIZE: ${SEARCH_API_MAX_SIZE:-100}
+    ports:
+      - "${SEARCH_API_PORT:-8080}:8080"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      indexer:
+        condition: service_completed_successfully
+
 volumes:
   postgres_data:
   elasticsearch_data:
