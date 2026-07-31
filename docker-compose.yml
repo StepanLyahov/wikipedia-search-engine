@@ -31,5 +31,40 @@ services:
         condition: service_healthy
     restart: "no"
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+
+  indexer:
+    build:
+      context: ./indexer
+    environment:
+      DATABASE_URL: postgres://wiki:wiki@postgres:5432/wiki?sslmode=disable
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-wiki_pages}
+      INDEXER_REQUEST_TIMEOUT: ${INDEXER_REQUEST_TIMEOUT:-15s}
+      INDEXER_BATCH_SIZE: ${INDEXER_BATCH_SIZE:-500}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      crawler:
+        condition: service_completed_successfully
+    restart: "no"
+
 volumes:
   postgres_data:
+  elasticsearch_data:

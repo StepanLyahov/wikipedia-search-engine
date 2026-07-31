@@ -1,0 +1,47 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - asciicheck
+    - bodyclose
+    - copyloopvar
+    - dupl
+    - errcheck
+    - errorlint
+    - exhaustive
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nilerr
+    - noctx
+    - prealloc
+    - revive
+    - staticcheck
+    - unparam
+    - unconvert
+    - unused
+
+  exclusions:
+    paths:
+      - ".*/mocks/.*"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+  exclusions:
+    paths:
+      - ".*/mocks/.*"
+
+run:
+  timeout: 2m
