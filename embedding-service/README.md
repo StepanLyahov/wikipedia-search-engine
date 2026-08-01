@@ -58,3 +58,19 @@ container needs no network access at runtime:
 ```sh
 docker compose up --build
 ```
+
+## Extending this
+
+* **Changing the model**: set `EMBEDDING_MODEL_NAME` — but the *dimension* is baked into three
+  other places that must move together: `INDEXER_EMBEDDING_DIMS` (env, defaults to `384`,
+  drives the Elasticsearch `dense_vector` mapping in `indexer`), and any test asserting a fixed
+  vector length (`tests/test_model.py` here, `e2e/test_indexer.py` in the end-to-end suite). A
+  model with a different output size needs a fresh `wiki_pages` index (`docker compose down -v`)
+  since Elasticsearch's `dense_vector` dimension is fixed at index-creation time.
+* **The gRPC contract** lives in [`../proto/embedding/embedding.proto`](../proto/embedding/embedding.proto),
+  shared with the Go clients in `indexer` and `search-api` — see
+  [`../proto/README.md`](../proto/README.md) before adding an RPC or field, and regenerate all
+  three consumers together.
+* **`servicer.py` depends on a narrow protocol** (anything with `encode(text) -> list[float]`),
+  not on `SentenceTransformer` directly — that's what makes `tests/test_servicer.py` fast (a fake
+  model, no PyTorch import). Keep that seam if you change how embeddings are produced.

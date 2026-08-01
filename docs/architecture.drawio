@@ -1,0 +1,78 @@
+<mxfile host="app.diagrams.net" modified="2026-08-01T00:00:00.000Z" agent="wikipedia-search-engine" version="24.0.0" type="device">
+  <diagram name="Architecture" id="architecture">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="lbl-ingestion" value="Ingestion pipeline (one-shot, runs once per docker compose up)" style="text;html=1;align=left;verticalAlign=middle;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="520" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl-serving" value="Serving pipeline (long-running)" style="text;html=1;align=left;verticalAlign=middle;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="820" y="290" width="360" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wikipedia" value="Wikipedia&#10;(en.wikipedia.org)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="crawler" value="crawler&#10;(Go)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="240" y="60" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="postgres" value="PostgreSQL&#10;pages(id, url, title, html, status)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="440" y="50" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="indexer" value="indexer&#10;(Go)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="650" y="60" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="elasticsearch" value="Elasticsearch&#10;wiki_pages index&#10;(title, body, embedding[384])" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="860" y="50" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="embedding" value="embedding-service&#10;(Python + gRPC)&#10;all-MiniLM-L6-v2, 384 dims" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="650" y="190" width="180" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="searchapi" value="search-api&#10;(Go)&#10;GET /search, GET /semantic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="860" y="330" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="client" value="client&#10;(curl / browser)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="340" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-wiki-crawler" value="HTTP GET" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;" edge="1" parent="1" source="wikipedia" target="crawler">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-crawler-pg" value="INSERT page" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;" edge="1" parent="1" source="crawler" target="postgres">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-pg-indexer" value="SELECT pages" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;" edge="1" parent="1" source="postgres" target="indexer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-indexer-emb" value="gRPC Embed(text)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;exitX=0.25;exitY=1;entryX=0.25;entryY=0;" edge="1" parent="1" source="indexer" target="embedding">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-emb-indexer" value="vector[384]" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;exitX=0.75;exitY=0;entryX=0.75;entryY=1;" edge="1" parent="1" source="embedding" target="indexer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-indexer-es" value="Bulk index&#10;(title, body, embedding)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;" edge="1" parent="1" source="indexer" target="elasticsearch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-searchapi-emb" value="gRPC Embed(query)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;exitX=0;exitY=0.3;entryX=0.75;entryY=1;" edge="1" parent="1" source="searchapi" target="embedding">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-emb-searchapi" value="vector[384]" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;exitX=1;exitY=0.7;entryX=0.2;entryY=0;" edge="1" parent="1" source="embedding" target="searchapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-searchapi-es" value="multi_match (BM25) /&#10;knn (cosine)" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;exitX=0.7;exitY=0;entryX=0.6;entryY=1;" edge="1" parent="1" source="searchapi" target="elasticsearch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-client-searchapi" value="GET /search?q=..&#10;GET /semantic?q=.." style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;" edge="1" parent="1" source="client" target="searchapi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-searchapi-client" value="JSON { hits: [...] }" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=11;exitX=1;exitY=0.7;entryX=0;entryY=0.7;" edge="1" parent="1" source="searchapi" target="client">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

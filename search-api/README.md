@@ -82,3 +82,24 @@ Once the indexer has finished populating `wiki_pages`, query the API:
 curl "http://localhost:8080/search?q=distributed%20systems"
 curl "http://localhost:8080/semantic?q=how%20search%20engines%20work"
 ```
+
+## Extending this
+
+* **Adding an endpoint**: add a method to the `Handler` in its own file
+  (`internal/handler/http/<name>.go`), register the route in `router.go`, and — if it needs a new
+  capability from the service layer — extend the `Searcher` port (`searcher.go`) and its mock.
+  Business logic belongs in `internal/service/search`, not in the handler; the handler only does
+  request parsing/validation and response shaping.
+* **`/search` and `/semantic` share one `Service`** (`internal/service/search`) and one
+  Elasticsearch adapter (`internal/repository/elasticsearch`) rather than being split into two
+  service packages — both are "the search use case" over the same index, just two query modes
+  (`Search` = `multi_match`, `Semantic` = embed-then-`VectorSearch`). Keep new query modes on the
+  same `Service`/`SearchIndex` port unless they need genuinely different dependencies.
+* **`num_candidates`** (`SEARCH_API_NUM_CANDIDATES`) is a server-side quality/latency knob, not a
+  request parameter — deliberately not exposed on `/semantic`, per the assignment's API shape. If
+  you do want per-request control, it threads through `search.Config` → `Service.Semantic` →
+  `repository.SearchIndex.VectorSearch`.
+* The embedding-service gRPC client (`internal/transport/embedding`) implements the
+  `search.Embedder` port the same way `indexer`'s does — see
+  [`../proto/README.md`](../proto/README.md) for the shared contract and regeneration commands if
+  the `.proto` changes.
