@@ -59,7 +59,7 @@ func TestRunIndexesPagesInBatches(t *testing.T) {
 
 	// extractBody joins all visible text on the page, including the heading itself,
 	// so the heading text is expected to appear at the start of the body too.
-	if batches[0][0].Title != "Elasticsearch" || batches[0][0].Body != "Elasticsearch A search engine." {
+	if batches[0][0].Title != wantElasticsearch || batches[0][0].Body != "Elasticsearch A search engine." {
 		t.Fatalf("unexpected first document: %+v", batches[0][0])
 	}
 

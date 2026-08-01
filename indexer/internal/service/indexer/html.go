@@ -50,6 +50,9 @@ func extractTitle(source string) string {
 			}
 		case html.CommentToken, html.DoctypeToken:
 			continue
+		case html.ErrorToken:
+			// unreachable: handled by the early return above.
+			continue
 		default:
 			continue
 		}
@@ -87,14 +90,21 @@ func extractBody(source string) string {
 			}
 		case html.SelfClosingTagToken, html.CommentToken, html.DoctypeToken:
 			continue
+		case html.ErrorToken:
+			// unreachable: handled by the early return above.
+			continue
 		default:
 			continue
 		}
 	}
 }
 
+// isSkippable reports whether tag's content should be excluded from the extracted body.
+// script/style/noscript are tokenized by golang.org/x/net/html as raw text, so their
+// contents (including markup like a <noscript> tracking-pixel <img>) would otherwise come
+// through as literal, unparsed text.
 func isSkippable(tag string) bool {
-	return tag == "script" || tag == "style"
+	return tag == "script" || tag == "style" || tag == "noscript"
 }
 
 func hasID(token html.Token, id string) bool {
