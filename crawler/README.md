@@ -37,15 +37,16 @@ docker compose exec postgres psql -U wiki -d wiki -c 'SELECT id, title, status, 
 
 ## Extending this
 
-* **Link discovery** (`internal/service/crawler/html.go`, `wikiLinks`) only follows
-  same-page-relative `href="/wiki/..."` anchors. Most in-body Wikipedia links are now absolute
-  URLs (`href="https://en.wikipedia.org/wiki/..."`), so with the default seed the crawler
-  currently only ever discovers one further page (`/wiki/Main_Page`, linked from the page chrome,
-  not the article body) — not a `CRAWLER_MAX_DEPTH`/`CRAWLER_MAX_PAGES` limit. To crawl real
-  article-to-article links, `wikiLinks` needs to also match absolute
-  `https://en.wikipedia.org/wiki/...` hrefs (careful to still exclude `Special:`, `Category:`,
-  `Help:`, `Portal:`, `File:`, etc. namespaced pages and `#`/`?` fragments/queries, the same way
-  the relative-link filter already does).
+* **Link discovery** (`internal/service/crawler/html.go`, `wikiLinks`/`wikiArticlePath`) accepts
+  both page-relative anchors (`href="/wiki/..."`) and the absolute
+  `href="https://en.wikipedia.org/wiki/..."` links most in-body Wikipedia content actually uses
+  today — an earlier version only matched the relative form, so it silently crawled just one
+  extra page (`/wiki/Main_Page`, linked from the page chrome, not the article body) regardless of
+  `CRAWLER_MAX_DEPTH`/`CRAWLER_MAX_PAGES`. `wikiArticlePath` is the single place that decides
+  whether an `href` is a followable article link; it excludes `Special:`, `Category:`, `Help:`,
+  `Portal:`, `File:`, etc. namespaced pages, `#`/`?` fragments/queries, and any other host. If you
+  add another accepted link form (e.g. a different Wikipedia language edition), extend that
+  function and its table-driven test in `html_test.go` rather than `wikiLinks` itself.
 * **Idempotency** relies entirely on the `pages.url` `UNIQUE` constraint plus the
   `Exists`-before-`Fetch` check in `Crawl` (`internal/service/crawler/crawl.go`) — a page that's
   already stored is skipped without inspecting its links again, so re-running the crawler never

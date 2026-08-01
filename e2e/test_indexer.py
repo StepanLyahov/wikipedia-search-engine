@@ -1,10 +1,18 @@
 """Verifies the indexer turned crawled pages into Elasticsearch documents, each carrying a
 384-dim embedding produced by the embedding-service."""
+import re
 import statistics
 
 import requests
 
 EMBEDDING_DIMS = 384
+
+# Concrete leaked-tag signatures rather than a blanket "no '<' at all" check: real Wikipedia
+# prose legitimately contains bare "<"/">" -- e.g. the Java article's "the special delimiters
+# <% and %>", or "List<String>" in a generics discussion -- so banning "<" outright produces
+# false positives. This instead targets the actual bug class (raw-text tags like <noscript>
+# leaking their content, e.g. a <img ...> tracking pixel, straight into extracted body text).
+LEAKED_TAG_PATTERN = re.compile(r"</?(script|style|noscript|iframe|svg|img)\b", re.IGNORECASE)
 
 
 def test_index_exists_with_expected_mapping(es_base_url, elasticsearch_index):
@@ -40,7 +48,11 @@ def test_documents_have_title_url_and_body(indexed_documents):
         assert source["title"], f"document {source.get('url')!r} has an empty title"
         assert source["url"].startswith("https://en.wikipedia.org/wiki/")
         assert source["body"], f"document {source['url']!r} has an empty body"
-        assert "<" not in source["body"], f"document {source['url']!r} body still contains HTML"
+        leaked = LEAKED_TAG_PATTERN.search(source["body"])
+        assert not leaked, (
+            f"document {source['url']!r} body still contains a raw HTML tag ({leaked.group(0)!r}); "
+            "see indexer/internal/service/indexer/html.go's isSkippable"
+        )
 
 
 def test_documents_have_384_dim_embeddings(indexed_documents):

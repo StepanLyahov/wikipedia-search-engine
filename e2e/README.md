@@ -58,15 +58,22 @@ compose config (`docker compose config`) rather than hardcoding defaults.
 * Fixtures read ports, the DB DSN, the crawl seed URL and the ES index name back out of
   `docker compose config`, so the tests always match whatever actually drives the stack instead
   of duplicating `.env` defaults.
-* The semantic-search assertions were picked empirically against the default seed (the
-  "Elasticsearch" Wikipedia article, which currently only links to "Main Page" — see below) and
-  use two contrasting queries with a comfortable score margin in each direction, rather than a
-  single fragile top-1 assertion. Since this tests against live Wikipedia content, a future
-  article edit could in principle shift a close-margin case; that's an accepted trade-off of
-  testing the real pipeline instead of canned fixtures.
-* With the default seed, the crawler currently only saves 2 pages. This isn't a limit on
-  `CRAWLER_MAX_PAGES`/`CRAWLER_MAX_DEPTH` — the crawler's link extraction only follows
-  same-page-relative `href="/wiki/..."` links, and most in-body Wikipedia links are now absolute
-  URLs (`href="https://en.wikipedia.org/wiki/..."`), so only the one relative link every article
-  has (to `/wiki/Main_Page`) gets followed. The tests are written to hold for this real,
-  reproducible 2-page corpus rather than assuming a larger one.
+* With the default seed, the crawler now discovers around a hundred real pages (Kibana, Apache
+  Lucene, Full-text search, "Search engine (computing)", ...), not just the seed — several of
+  them genuinely close in topic to the "Elasticsearch" article. The semantic-search tests are
+  written for that reality: instead of asserting the Elasticsearch page ranks exactly first for
+  an on-topic query (fragile once several legitimately-related pages exist to compete for rank
+  1), they assert it's *findable* within a generous top-k, and that a clearly unrelated query
+  ranks something else first. Since this tests against live Wikipedia content, a future article
+  edit could in principle shift a result in or out of that window; that's an accepted trade-off
+  of testing the real pipeline instead of canned fixtures.
+* `test_search_fulltext.py`'s body-field test asks Elasticsearch's term vectors API which
+  indexed term is rarest across the corpus, rather than re-tokenizing the raw text in Python —
+  Lucene's standard analyzer doesn't split everything the way a naive word regex would (e.g. a
+  citation URL like `n3.nabble.com` is indexed as one token, `nabble.com`, not `nabble` + `com`),
+  so guessing tokenization can pick a "distinctive" word that was never actually indexed as such.
+  Asking Elasticsearch directly sidesteps that class of mismatch entirely.
+* `test_semantic_k_limits_result_count` deliberately checks a `k` above 10: Elasticsearch's kNN
+  `k` only controls how many candidates get ranked internally, not how many come back — the
+  top-level `size` does that, and it's easy to set one and forget the other (this test exists
+  because that was a real bug here, fixed in `search-api/internal/repository/elasticsearch/vector_search.go`).

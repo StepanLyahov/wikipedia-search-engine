@@ -15,7 +15,10 @@ import (
 const embeddingField = "embedding"
 
 type vectorSearchRequestBody struct {
-	KNN knnQuery `json:"knn"`
+	// Size must match k: the knn clause's k only controls how many nearest neighbors
+	// Elasticsearch ranks internally, not how many of them come back in the response.
+	Size int      `json:"size"`
+	KNN  knnQuery `json:"knn"`
 }
 
 type knnQuery struct {
@@ -29,7 +32,8 @@ type knnQuery struct {
 // Elasticsearch's cosine similarity score, which is the query's default sort order.
 func (c *SearchIndex) VectorSearch(ctx context.Context, vector []float32, k, numCandidates int) ([]domain.Hit, error) {
 	reqBody := vectorSearchRequestBody{
-		KNN: knnQuery{Field: embeddingField, QueryVector: vector, K: k, NumCandidates: numCandidates},
+		Size: k,
+		KNN:  knnQuery{Field: embeddingField, QueryVector: vector, K: k, NumCandidates: numCandidates},
 	}
 
 	payload, err := json.Marshal(reqBody)

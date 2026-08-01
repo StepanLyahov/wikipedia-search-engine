@@ -99,6 +99,13 @@ curl "http://localhost:8080/semantic?q=how%20search%20engines%20work"
   request parameter — deliberately not exposed on `/semantic`, per the assignment's API shape. If
   you do want per-request control, it threads through `search.Config` → `Service.Semantic` →
   `repository.SearchIndex.VectorSearch`.
+* **`VectorSearch`'s request body must set both `knn.k` and the top-level `size` to the same
+  value** (`internal/repository/elasticsearch/vector_search.go`). Elasticsearch's `knn.k` only
+  controls how many nearest neighbors get ranked internally; the top-level `size` is what
+  actually bounds how many come back, and it defaults to 10 if omitted — so `k=20` would
+  silently return only 10 hits without `Size: k` alongside it. If you add another field to the
+  request body, keep this pairing in mind; `e2e/test_search_semantic.py`'s
+  `test_semantic_k_limits_result_count` guards against regressing it.
 * The embedding-service gRPC client (`internal/transport/embedding`) implements the
   `search.Embedder` port the same way `indexer`'s does — see
   [`../proto/README.md`](../proto/README.md) for the shared contract and regeneration commands if

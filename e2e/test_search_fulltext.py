@@ -1,28 +1,33 @@
 """Verifies GET /search: BM25 full-text search over indexed title/body fields."""
-import re
-
 import requests
 
-STOPWORDS = {
-    "the", "and", "for", "are", "but", "not", "you", "all", "can", "her", "was", "one",
-    "our", "out", "day", "get", "has", "him", "his", "how", "man", "new", "now", "old",
-    "see", "two", "way", "who", "boy", "did", "its", "let", "put", "say", "she", "too",
-    "use", "with", "this", "that", "from", "have", "also", "been", "were", "which",
-    "their", "wikipedia", "encyclopedia",
-}
 
+def _distinctive_body_term(es_base_url: str, index: str, doc_id: str) -> str:
+    """Ask Elasticsearch itself, via the term vectors API, which term in this document's
+    indexed body field is least common across the whole corpus.
 
-def _distinctive_body_word(doc: dict) -> str:
-    """Pick a real word from doc's indexed body that isn't part of its own title, so a
-    search for it can only match via the body field, not the title-boosted field."""
-    title_words = set(re.findall(r"[a-zA-Z]+", doc["title"].lower()))
-    body_words = re.findall(r"[a-zA-Z]+", doc["body"].lower())
+    This deliberately doesn't re-tokenize the raw text in Python: Lucene's standard analyzer
+    keeps some substrings together in ways a naive word-split won't replicate (e.g. a citation
+    URL like "n3.nabble.com" is indexed as the single token "nabble.com", not "nabble" and
+    "com"), so a term picked by guessing tokenization can come back with zero hits even though
+    it's genuinely in the page's body. Reading real per-document term stats from the terms
+    Elasticsearch actually indexed sidesteps that entirely, and stays correct whether the
+    corpus has 2 pages or 200: the term need not be globally rare, just rarer than every other
+    term on this page.
+    """
+    resp = requests.get(
+        f"{es_base_url}/{index}/_termvectors/{doc_id}",
+        params={"fields": "body", "term_statistics": "true"},
+        timeout=10,
+    )
+    resp.raise_for_status()
 
-    for word in body_words:
-        if len(word) >= 5 and word not in STOPWORDS and word not in title_words:
-            return word
+    terms = resp.json()["term_vectors"]["body"]["terms"]
+    candidates = [term for term in terms if len(term) >= 6 and term.isalpha()]
+    if not candidates:
+        raise AssertionError(f"document {doc_id!r} has no eligible body terms")
 
-    raise AssertionError(f"could not find a distinctive body word for {doc['url']!r}")
+    return min(candidates, key=lambda term: terms[term]["doc_freq"])
 
 
 def test_search_requires_query(search_api_base_url):
@@ -43,18 +48,24 @@ def test_search_finds_seed_page_by_title(search_api_base_url, crawler_seed_url):
     )
 
 
-def test_search_matches_body_field_not_just_title(search_api_base_url, indexed_documents, crawler_seed_url):
-    seed_doc = next(doc["_source"] for doc in indexed_documents if doc["_source"]["url"] == crawler_seed_url)
-    body_word = _distinctive_body_word(seed_doc)
+def test_search_matches_body_field_not_just_title(
+    search_api_base_url, indexed_documents, crawler_seed_url, es_base_url, elasticsearch_index
+):
+    seed_doc_id = next(
+        doc["_id"] for doc in indexed_documents if doc["_source"]["url"] == crawler_seed_url
+    )
+    body_term = _distinctive_body_term(es_base_url, elasticsearch_index, seed_doc_id)
 
-    resp = requests.get(f"{search_api_base_url}/search", params={"q": body_word}, timeout=10)
+    resp = requests.get(
+        f"{search_api_base_url}/search", params={"q": body_term, "size": 50}, timeout=10
+    )
     assert resp.status_code == 200
 
     hits = resp.json()["hits"]
     urls = [hit["url"] for hit in hits]
     assert crawler_seed_url in urls, (
-        f"query {body_word!r} (drawn from the page's own body) did not surface it via /search; "
-        "multi_match may not be searching the body field"
+        f"query {body_term!r} (this page's own least-common indexed body term) did not surface "
+        "it via /search; multi_match may not be searching the body field"
     )
 
 

@@ -131,12 +131,10 @@ clean crawl):
 docker compose down -v
 ```
 
-> **Note on crawl breadth**: with the default seed (the "Elasticsearch" article), the crawler
-> currently only saves 2 pages. This isn't a `CRAWLER_MAX_PAGES`/`CRAWLER_MAX_DEPTH` limit — most
-> in-body Wikipedia links are now absolute URLs, and the crawler's link extraction only follows
-> same-page-relative `href="/wiki/..."` links, so only the one relative link every article has
-> (to `/wiki/Main_Page`) gets followed. See [`crawler/README.md`](crawler/README.md) for details
-> if you want to extend it.
+With the default seed (the "Elasticsearch" article) and defaults (`CRAWLER_MAX_DEPTH=2`,
+`CRAWLER_MAX_PAGES=100`), the crawler discovers around a hundred real, topically-related pages
+(Apache Lucene, Kibana, Full-text search, Search engine (computing), ...), not just the seed —
+see [`crawler/README.md`](crawler/README.md) for the link-extraction details.
 
 ## Running the tests
 
