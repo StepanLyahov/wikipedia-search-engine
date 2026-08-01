@@ -168,6 +168,12 @@ pytest
 See [`e2e/README.md`](e2e/README.md) for what each test checks and the environment variables that
 control it (e.g. `E2E_SKIP_COMPOSE` to test against a stack you already started by hand).
 
+## Observability
+
+For connecting a GUI client (e.g. DBeaver) to Postgres, browsing Elasticsearch's indices and
+documents (REST API examples, plus an optional one-off browser UI), and tailing every service's
+logs live, see [`OBSERVABILITY.md`](OBSERVABILITY.md).
+
 ## Configuration
 
 All services are configured through environment variables; every variable with a sensible default

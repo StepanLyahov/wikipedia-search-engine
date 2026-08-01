@@ -37,6 +37,12 @@ services:
       discovery.type: single-node
       xpack.security.enabled: "false"
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      # CORS is off by default in Elasticsearch, which blocks browser-based UIs (e.g. Elasticvue,
+      # see OBSERVABILITY.md) from calling this API directly from another origin. Security is
+      # already disabled above for this local dev stack, so a wildcard origin costs nothing extra.
+      http.cors.enabled: "true"
+      http.cors.allow-origin: '"*"'
+      http.cors.allow-headers: "X-Requested-With,Content-Type,Content-Length,Authorization"
     healthcheck:
       test: ["CMD-SHELL", "curl -fs 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' || exit 1"]
       interval: 10s
