@@ -10,4 +10,5 @@ import (
 // Searcher is the application port required to serve search requests.
 type Searcher interface {
 	Search(ctx context.Context, query string, from, size int) ([]domain.Hit, error)
+	Semantic(ctx context.Context, query string, k int) ([]domain.Hit, error)
 }

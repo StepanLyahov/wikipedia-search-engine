@@ -9,6 +9,7 @@ import (
 	zaplogger "github.com/wikipedia-search-engine/search-api/internal/logger/zap"
 	"github.com/wikipedia-search-engine/search-api/internal/repository/elasticsearch"
 	"github.com/wikipedia-search-engine/search-api/internal/service/search"
+	"github.com/wikipedia-search-engine/search-api/internal/transport/embedding"
 	"go.uber.org/zap"
 )
 
@@ -26,12 +27,21 @@ func New(_ context.Context) (*App, error) {
 
 	applicationLogger := zaplogger.New(rawLogger)
 
+	embedder, err := embedding.NewClient(cfg.EmbeddingServiceAddr, cfg.EmbeddingRequestTimeout)
+	if err != nil {
+		applicationLogger.Sync()
+
+		return nil, err
+	}
+
 	searchIndex := elasticsearch.NewSearchIndex(cfg.ElasticsearchURL, cfg.ElasticsearchIndex, cfg.RequestTimeout)
-	service := search.New(searchIndex, applicationLogger)
+	service := search.New(searchIndex, embedder, applicationLogger, search.Config{NumCandidates: cfg.NumCandidates})
 
 	handler := searchhandler.NewHandler(service, applicationLogger, searchhandler.Config{
 		DefaultSize: cfg.DefaultSize,
 		MaxSize:     cfg.MaxSize,
+		DefaultK:    cfg.DefaultK,
+		MaxK:        cfg.MaxK,
 	})
 	router := searchhandler.NewRouter(handler)
 
@@ -41,5 +51,5 @@ func New(_ context.Context) (*App, error) {
 		ReadHeaderTimeout: cfg.RequestTimeout,
 	}
 
-	return &App{server: server, logger: applicationLogger, shutdownTimeout: cfg.ShutdownTimeout}, nil
+	return &App{server: server, embedder: embedder, logger: applicationLogger, shutdownTimeout: cfg.ShutdownTimeout}, nil
 }

@@ -6,6 +6,7 @@ import "net/http"
 func NewRouter(h *Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /search", h.Search)
+	mux.HandleFunc("GET /semantic", h.Semantic)
 
 	return mux
 }

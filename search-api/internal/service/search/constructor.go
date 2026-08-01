@@ -6,6 +6,6 @@ import (
 )
 
 // New creates a search service with its required ports.
-func New(index repository.SearchIndex, log logger.Logger) *Service {
-	return &Service{index: index, logger: log}
+func New(index repository.SearchIndex, embedder Embedder, log logger.Logger, cfg Config) *Service {
+	return &Service{index: index, embedder: embedder, logger: log, cfg: cfg}
 }

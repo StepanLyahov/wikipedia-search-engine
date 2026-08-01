@@ -6,8 +6,17 @@ import (
 	"github.com/wikipedia-search-engine/search-api/internal/repository"
 )
 
+const fieldError = "error"
+
+// Config configures search behaviour.
+type Config struct {
+	NumCandidates int
+}
+
 // Service implements the search use case.
 type Service struct {
-	index  repository.SearchIndex
-	logger logger.Logger
+	index    repository.SearchIndex
+	embedder Embedder
+	logger   logger.Logger
+	cfg      Config
 }

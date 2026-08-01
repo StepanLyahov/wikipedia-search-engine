@@ -18,7 +18,7 @@ func (s *Service) Search(ctx context.Context, query string, from, size int) ([]d
 
 	hits, err := s.index.Search(ctx, query, from, size)
 	if err != nil {
-		s.logger.Error("search failed", logger.Field{Key: "error", Value: err})
+		s.logger.Error("search failed", logger.Field{Key: fieldError, Value: err})
 
 		return nil, fmt.Errorf("search: %w", err)
 	}

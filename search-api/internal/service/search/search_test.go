@@ -9,12 +9,22 @@ import (
 	"github.com/wikipedia-search-engine/search-api/internal/logger"
 	loggermocks "github.com/wikipedia-search-engine/search-api/internal/logger/mocks"
 	"github.com/wikipedia-search-engine/search-api/internal/repository/mocks"
+	servicemocks "github.com/wikipedia-search-engine/search-api/internal/service/search/mocks"
 )
 
 func noopLogger() *loggermocks.Logger {
 	return &loggermocks.Logger{
 		InfoFunc:  func(string, ...logger.Field) {},
 		ErrorFunc: func(string, ...logger.Field) {},
+	}
+}
+
+func unusedEmbedder(t *testing.T) *servicemocks.Embedder {
+	return &servicemocks.Embedder{
+		EmbedFunc: func(context.Context, string) ([]float32, error) {
+			t.Fatal("embedder should not be called by keyword search")
+			return nil, nil
+		},
 	}
 }
 
@@ -32,7 +42,7 @@ func TestSearchReturnsHits(t *testing.T) {
 		},
 	}
 
-	service := New(index, noopLogger())
+	service := New(index, unusedEmbedder(t), noopLogger(), Config{NumCandidates: 100})
 
 	got, err := service.Search(context.Background(), "distributed systems", 0, 10)
 	if err != nil {
@@ -54,7 +64,7 @@ func TestSearchWrapsIndexError(t *testing.T) {
 		SearchFunc: func(context.Context, string, int, int) ([]domain.Hit, error) { return nil, indexErr },
 	}
 
-	service := New(index, noopLogger())
+	service := New(index, unusedEmbedder(t), noopLogger(), Config{NumCandidates: 100})
 
 	_, err := service.Search(context.Background(), "query", 0, 10)
 	if !errors.Is(err, indexErr) {

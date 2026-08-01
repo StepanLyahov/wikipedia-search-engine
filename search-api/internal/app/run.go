@@ -8,6 +8,8 @@ import (
 	"github.com/wikipedia-search-engine/search-api/internal/logger"
 )
 
+const fieldError = "error"
+
 // Run starts the HTTP server and blocks until ctx is cancelled or the server fails.
 func (a *App) Run(ctx context.Context) error {
 	a.logger.Info("search-api service starting", logger.Field{Key: "addr", Value: a.server.Addr})
@@ -27,7 +29,7 @@ func (a *App) Run(ctx context.Context) error {
 		return a.shutdown()
 	case err := <-serveErr:
 		if err != nil {
-			a.logger.Error("search-api service failed", logger.Field{Key: "error", Value: err})
+			a.logger.Error("search-api service failed", logger.Field{Key: fieldError, Value: err})
 
 			return err
 		}
@@ -43,7 +45,7 @@ func (a *App) shutdown() error {
 	defer cancel()
 
 	if err := a.server.Shutdown(shutdownCtx); err != nil {
-		a.logger.Error("search-api service shutdown failed", logger.Field{Key: "error", Value: err})
+		a.logger.Error("search-api service shutdown failed", logger.Field{Key: fieldError, Value: err})
 
 		return err
 	}

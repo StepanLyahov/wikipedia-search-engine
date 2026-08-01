@@ -96,10 +96,17 @@ services:
       SEARCH_API_SHUTDOWN_TIMEOUT: ${SEARCH_API_SHUTDOWN_TIMEOUT:-5s}
       SEARCH_API_DEFAULT_SIZE: ${SEARCH_API_DEFAULT_SIZE:-10}
       SEARCH_API_MAX_SIZE: ${SEARCH_API_MAX_SIZE:-100}
+      SEARCH_API_DEFAULT_K: ${SEARCH_API_DEFAULT_K:-10}
+      SEARCH_API_MAX_K: ${SEARCH_API_MAX_K:-100}
+      SEARCH_API_NUM_CANDIDATES: ${SEARCH_API_NUM_CANDIDATES:-100}
+      EMBEDDING_SERVICE_ADDR: embedding-service:50051
+      SEARCH_API_EMBEDDING_TIMEOUT: ${SEARCH_API_EMBEDDING_TIMEOUT:-15s}
     ports:
       - "${SEARCH_API_PORT:-8080}:8080"
     depends_on:
       elasticsearch:
+        condition: service_healthy
+      embedding-service:
         condition: service_healthy
       indexer:
         condition: service_completed_successfully
